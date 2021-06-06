@@ -53,12 +53,18 @@ logger.addHandler(f_handler)
 
 
 ### settings
-UserDataDir='./data/User_Data/'
+current_dir = os.path.dirname(__file__)
+driver_path = os.path.join(current_dir,'driver','chromedriver')
+UserDataDir = os.path.join(current_dir, 'data','User_Data')
 
 sg.theme('Light Grey1')
 
 # SenderList=[]
-SenderList = os.listdir(UserDataDir)
+if not os.path.exists(UserDataDir):
+    os.makedirs(UserDataDir)
+    SenderList=[]
+else:
+    SenderList = os.listdir(UserDataDir)
 driver=None
 
 
@@ -72,7 +78,7 @@ file_list_column = [
     ],
     [
         sg.Listbox(
-            values=[], enable_events=True, size=(40, 20), key="-FILE LIST-"
+            values=[], enable_events=True, size=(20, 20), key="-FILE LIST-"
         )
     ],
 ]
@@ -83,11 +89,11 @@ file_list_column = [
 Sender_column = [
     [sg.In(size=(10, 1), enable_events=True, key="-SenderName-"), sg.Button('Register sender')],  
     [sg.Text("{} number registered".format(len(SenderList))) ],
-    [  sg.Listbox( values=[], enable_events=True, size=(40, 20), key="-SenderList-" ) ],
+    [  sg.Listbox( values=[], enable_events=True, size=(40, 5), key="-SenderList-" ) ],
     #  sg.Text(text=ExistingSenderList, key='-ExistingSenderList-') ],  
     [ sg.Text("Task per Sender"), sg.In(size=(10,1), enable_events=True, key='-TaskPerNumber-') ],
     [sg.Text("Contact"), sg.In(size=(10, 1), enable_events=True), sg.FileBrowse(key="-ContactPath-")],
-    [sg.Multiline(size=(70, 20), font='Arial 10', text_color='black', key='-MLINE-')],
+    [sg.Multiline(size=(50, 20), font='Arial 10', text_color='black', key='-MLINE-')],
     [sg.Button('Start')]
 ]
 
@@ -133,7 +139,7 @@ while True:
         UserDataDirPath=os.path.join(UserDataDir,values["-SenderName-"])
         options.add_argument('--user-data-dir={}'.format(UserDataDirPath))
 
-        driver = webdriver.Chrome('/home/aman/utilities/chromedriver',chrome_options=options)
+        driver = webdriver.Chrome(driver_path,chrome_options=options)
         driver.get("https://web.whatsapp.com/")
         time.sleep(5)
         SenderList.append(values["-SenderName-"])
@@ -154,7 +160,7 @@ while True:
             UserDataDirPath = UserDataDirPath=os.path.join(UserDataDir,Sender)
             options.add_argument('--user-data-dir={}'.format(UserDataDirPath))
 
-            driver = webdriver.Chrome('/home/aman/utilities/chromedriver',chrome_options=options)
+            driver = webdriver.Chrome(driver_path,chrome_options=options)
             driver.get("https://web.whatsapp.com/")
 
             if TotalSent==0:
@@ -175,7 +181,7 @@ while True:
                     UserDataDirPath = UserDataDirPath=os.path.join(UserDataDir,Sender)
                     options.add_argument('--user-data-dir={}'.format(UserDataDirPath))
 
-                    driver = webdriver.Chrome('/home/aman/utilities/chromedriver',chrome_options=options)
+                    driver = webdriver.Chrome(driver_path,chrome_options=options)
                     # driver.get("https://web.whatsapp.com/")
                     ThisSenderSent=0
                     time.sleep(10)
