@@ -28,7 +28,10 @@ import platform
 import logging
 import itertools
 
+
 from utilities import *
+
+current_dir = os.path.dirname(__file__)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -36,7 +39,12 @@ logger = logging.getLogger(__name__)
 
 # Create handlers
 c_handler = logging.StreamHandler()
-f_handler = logging.FileHandler('./logs/app.log')
+logdir = os.path.join(current_dir, 'logs')
+if not os.path.exists(logdir):
+    os.makedirs(logdir)
+logfile = os.path.join(logdir,'app.log')
+
+f_handler = logging.FileHandler(logfile)
 
 
 # Create formatters and add it to handlers
@@ -51,9 +59,8 @@ logger.addHandler(c_handler)
 logger.addHandler(f_handler)
 
 
-
 ### settings
-current_dir = os.path.dirname(__file__)
+
 driver_path = os.path.join(current_dir,'driver','chromedriver')
 UserDataDir = os.path.join(current_dir, 'data','User_Data')
 
@@ -88,12 +95,14 @@ file_list_column = [
 
 Sender_column = [
     [sg.In(size=(10, 1), enable_events=True, key="-SenderName-"), sg.Button('Register sender')],  
-    [sg.Text("{} number registered".format(len(SenderList))) ],
+    [sg.Text("{} sender registered".format(len(SenderList))) ],
     [  sg.Listbox( values=[], enable_events=True, size=(40, 5), key="-SenderList-" ) ],
     #  sg.Text(text=ExistingSenderList, key='-ExistingSenderList-') ],  
-    [ sg.Text("Task per Sender"), sg.In(size=(10,1), enable_events=True, key='-TaskPerNumber-') ],
+    [ sg.Text("Message per registered sender"), sg.In(size=(10,1), enable_events=True, key='-TaskPerNumber-') ],
     [sg.Text("Contact"), sg.In(size=(10, 1), enable_events=True), sg.FileBrowse(key="-ContactPath-")],
-    [sg.Multiline(size=(50, 20), font='Arial 10', text_color='black', key='-MLINE-')],
+    # [sg.Multiline(size=(30, 10), font=("Arial",11), text_color='black', key='-MLINE-') ],
+    [sg.Text("Message file"), sg.In(size=(10, 1), enable_events=True), sg.FileBrowse(key="-messagepath-")],
+    [sg.Text(size=(12,1), key='-STATUS-')],
     [sg.Button('Start')]
 ]
 
@@ -147,8 +156,15 @@ while True:
         window.Refresh()
         print('Register sender',SenderList)
     elif event == 'Start':
+        print('started')
         contacts = loadTxt2list(values['-ContactPath-'])
         print('{} contacts loaded'.format(len(contacts)))
+        import io
+        with io.open(values['-messagepath-'],'r',encoding='utf8') as f:
+            message = f.read()
+
+        # messages = loadTxt2list(values['-messagepath-'])
+        # message = ' '.join(messages)
         
         n=0
         ThisSenderSent=0
@@ -157,7 +173,7 @@ while True:
         Sender = next(iterator)
         while TotalSent<len(contacts):
             options = webdriver.ChromeOptions()
-            UserDataDirPath = UserDataDirPath=os.path.join(UserDataDir,Sender)
+            UserDataDirPath=os.path.join(UserDataDir,Sender)
             options.add_argument('--user-data-dir={}'.format(UserDataDirPath))
 
             driver = webdriver.Chrome(driver_path,chrome_options=options)
@@ -170,7 +186,7 @@ while True:
                 time.sleep(7)
             
             for PhoneNumber in contacts:
-                if SendMessage(driver,PhoneNumber,values['-MLINE-']):
+                if SendMessage(driver,PhoneNumber,message):
                     ThisSenderSent+=1
                     TotalSent+=1
                 if ThisSenderSent>= int(values['-TaskPerNumber-']):
@@ -187,6 +203,8 @@ while True:
                     time.sleep(10)
 
                 print('Sender: {}, ThisSenderSent: {}'.format(Sender,ThisSenderSent))   
+            status = "{}/{} номерге жіберілді".format(TotalSent,len(contacts))
+            window['-STATUS-'].update(status)
 
     elif event == "-FILE LIST-":  # A file was chosen from the listbox
         try:
